@@ -1,0 +1,11 @@
+venv/
+
+whl/
+/.ipynb_checkpoints
+/.vscode
+venv/*
+indata/*
+!indata/*.txt
+__pycache__/*
+settings.json
+*.xlsx

@@ -19,11 +19,13 @@ Excel output example :
 # %%
 import re
 from collections import namedtuple
+from typing import NamedTuple
 import sys
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 import argparse
+import time
 
 
 import geopandas
@@ -32,12 +34,21 @@ import overlap
 
 # %%
 
+class RunMetadata(NamedTuple):
+    outputname: str
+    timestep: str
+    distance: str = ''
+    area: str = ''
+    extra: str = ''
+
+RUNMETADATA_PROPER = ('Endpoint', 'Elapsed time [h]','Distance','Area', 'Nuclide/Agegroup')
+
+
 COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 'toteffout_bitmp': 'Total effective dose [Sv]',
                 'thyrod_bitmp': "Thyroid Organ Dose. Outdoor [Gy]",
                 'gamratetot_bitmp': 'Dose rate [Sv/h]',
                 }
-
 
 def parse_filename(filepath):
     # Using the timestamp part of the string as splitter since the rest appears to change.
@@ -63,15 +74,13 @@ def parse_filename(filepath):
     if outputname.split("_")[-1] in AGEGROUPS:
         agegroup = outputname.split("Total")[0].split("_")[-1]
         outputname = outputname.split(agegroup)[0].strip('_')
-        # Total is assuemd when agegroup is given:
+        # Total is assumed when agegroup is given:
         nuclide = '' if nuclide == "Total" else nuclide
     else:
         agegroup = ''
 
     extra = f"{nuclide} {agegroup}"
-    Run_metadata = namedtuple(
-        "Run_metadata", ['outputname', 'timestep', 'extra'], defaults=(None,) *3)
-    key = Run_metadata(outputname=outputname, timestep=timestep, extra=extra)
+    key = RunMetadata(outputname=outputname, timestep=timestep, extra=extra)
 
     return runname, timestamp, key
 
@@ -97,7 +106,6 @@ def get_folder(run_folder):
 
 
 def main():
-    import time
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
@@ -124,35 +132,38 @@ def main():
     runs = {}
     print(time.process_time() - start)
 
-    for shp_file in path.glob("**/*.shp"):
-        runname, timestamp, key = parse_filename(shp_file)
-        runs.setdefault(runname, {})
-        runs[runname].setdefault(timestamp, [])
-        runs[runname][timestamp].append(shp_file)
-
-    print(time.process_time() - start)
     if args.pickle_file:
         df = pd.from_pickle(args.load_pickle)
     else:
-        df = pd.DataFrame()
+        for shp_file in path.glob("**/*.shp"):
+            runname, timestamp, _ = parse_filename(shp_file)
+            runs.setdefault(runname, {})
+            runs[runname].setdefault(timestamp, [])
+            runs[runname][timestamp].append(shp_file)
+
+        print(time.process_time() - start)
+
+        rows = []
         for r, (run, timestamps) in enumerate(runs.items()):
             print(f"Run {r}/{len(runs)}")
             for timestamp, filelist in timestamps.items():
-                timestamp_results = parse_run(timestamp, run, filelist, args)
-                df = df.append(timestamp_results, ignore_index=True)
+                rows.append(parse_run(timestamp, run, filelist, args))
+
+        df = pd.DataFrame(rows)
         print(time.process_time() - start)
 
-        df.columns = pd.MultiIndex.from_tuples(df.columns)
-        df = df.reindex(
-            sorted(df.columns, key=lambda x: (x[0], x[1], x[2])), axis=1)
-        # Setting the indexes should be one step, but wont work..
-        df = df.set_index(("run", 0, '0'))
-        df = df.set_index(('timestamp', 0, '0'), append=True)
+        df.set_index(['run', 'timestamp'], inplace=True)
         df.index.rename(["Run", 'Release date'], inplace=True)
 
-        # Rename stuff:
-        df.rename_axis(
-            ('Endpoint', 'Elapsed time [h]', 'Nuclide/Agegroup'), axis=1, inplace=True)
+        df.columns = pd.MultiIndex.from_tuples(
+            [tuple(x) for x in df.columns], names=RUNMETADATA_PROPER)
+
+        # Sort columns by first, second and third... index. 
+        df = df.reindex(
+            sorted(df.columns, key=lambda x: (x[0], x[1], x[2], x[3])), axis=1)
+
+
+        # Rename columns:
         df = df.rename(columns=COLUMN_NAMES)
         df.to_pickle(f"{path.stem}.pkl")
     print(time.process_time() - start)
@@ -164,17 +175,16 @@ def main():
     return df
 
 
-
 def insert_isocurve_max(timestamp_results,key, distance, releasepoint, result_gdf ):                
     timestamp_results[key._replace(
-        extra=key.extra.strip() + f" {distance} km")] = overlap.get_isocurve_max(distance, releasepoint, result_gdf)
+        distance=f"{distance} km")] = overlap.get_isocurve_max(distance, releasepoint, result_gdf)
     return timestamp_results
 def parse_run(timestamp, run, filelist, args):
     print(f"Reading {run}, {timestamp}")
-    # Zeros are needed for pandas to accept these column nams when the rest are multiindex
+
     timestamp_results = {
-        ('run', 0, '0'): run,
-        ('timestamp', 0, '0'): timestamp}
+        'run': run,
+        'timestamp': timestamp}
     if args.debug:
         print("DEBUG Truncating to 4")
         filelist = filelist[0:4]
@@ -186,34 +196,33 @@ def parse_run(timestamp, run, filelist, args):
             # If the run stops before the first wanted timestep -> move value from "stop-timestep" to first wanted
             print(f"\tOverriding timestep {key.timestep}h to 48h")
             key48 = key._replace(timestep=48)
-            # Warn that the key dosn't exist. Overwriting should not happen
+            # Warn that the key doesn't exist. Overwriting should not happen
             if key48 in timestamp_results.keys():
                 print(
                     f"Warning, override 48h key already existing. {key}. \nOld:{timestamp_results[key48]}\nNew: {gdf['max']} ")
-                continue
+                exit()
             else:
                 key = key48
         if args.shp_max_mode:
             timestamp_results[key] = get_gdf_max(gdf)['max']
         else:
             timestamp_results[key._replace(
-                extra=key.extra+" tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
+                area="Tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
 
-            for distance in [.2, 1,2,5,20]:
+            for distance in [.2, 1, 2, 5, 20]:
                 timestamp_results = insert_isocurve_max(timestamp_results,key,
                                                         distance, overlap.GROTSUND_COORD, gdf)
 
     return timestamp_results
 
+
 # %%
 
 if __name__ == "__main__":
     # Slice by nested:
-    # df.loc[:, pd.IndexSlice[:, 'R']]
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
 
     #for notebook:
-    #  sys.argv= ['dummy',"-c"]
+    # sys.argv= ['dummy',"-c"]
     df = main()
 
-# %%

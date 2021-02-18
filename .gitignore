@@ -9,3 +9,5 @@ indata/*
 __pycache__/*
 settings.json
 *.xlsx
+*.pkl
+test2/*

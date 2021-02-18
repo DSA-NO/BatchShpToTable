@@ -28,7 +28,7 @@ Isocurve = NewType('Isocurve', shapely.geometry.LinearRing)
 
 @lru_cache
 def isocurve(distance_km, startingpoint: tuple) -> Isocurve:
-    print("creating isocurve")
+    print(f"creating {distance_km} km isocurve")
     p = shapely.geometry.Point(([startingpoint[0], startingpoint[1]]))
     areas = gpd.GeoDataFrame(columns=['name', 'geometry'])
     areas.loc[0] = ("point", p)

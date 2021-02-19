@@ -37,11 +37,11 @@ import overlap
 class RunMetadata(NamedTuple):
     outputname: str
     timestep: str
-    distance: str = ''
+    distance_km: float = None
     area: str = ''
-    extra: str = ''
+    nuc_or_age: str = ''
 
-RUNMETADATA_PROPER = ('Endpoint', 'Elapsed time [h]','Distance','Area', 'Nuclide/Agegroup')
+RUNMETADATA_PROPER = ('Endpoint', 'Elapsed time [h]','Distance [km]','Area', 'Nuclide/Agegroup')
 
 
 COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
@@ -49,6 +49,7 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 'thyrod_bitmp': "Thyroid Organ Dose. Outdoor [Gy]",
                 'gamratetot_bitmp': 'Dose rate [Sv/h]',
                 }
+DISTANCES = [.2, 1., 2., 5., 20.]
 
 def parse_filename(filepath):
     # Using the timestamp part of the string as splitter since the rest appears to change.
@@ -56,12 +57,12 @@ def parse_filename(filepath):
     filename = filepath.stem
     timestamp = re.findall(r"_[0-9]{12}_", filename)[0]
     runname, right_part = filename.split(timestamp)
-    timestep = right_part.split("_")[0]
-    nuclide = right_part.split("_")[-1]
+    timestep = right_part.split("_")[0].strip()
+    nuclide = right_part.split("_")[-1].strip()
 
     timestamp = timestamp.strip("_")
     outputname = right_part[len(timestep)+1:len(right_part)-len(nuclide)-1]
-    outputname = outputname.split("grid_")[-1]
+    outputname = outputname.split("grid_")[-1].strip()
 
     # Timestamp is in hours and seems to always end with extra 00, (might be minutes? :)..)
     timestep = timestep[0:-2]
@@ -80,7 +81,7 @@ def parse_filename(filepath):
         agegroup = ''
 
     extra = f"{nuclide} {agegroup}"
-    key = RunMetadata(outputname=outputname, timestep=timestep, extra=extra)
+    key = RunMetadata(outputname=outputname, timestep=timestep, nuc_or_age=extra)
 
     return runname, timestamp, key
 
@@ -158,9 +159,9 @@ def main():
         df.columns = pd.MultiIndex.from_tuples(
             [tuple(x) for x in df.columns], names=RUNMETADATA_PROPER)
 
-        # Sort columns by first, second and third... index. 
+        # Sort columns by time, nuclide, distance , second and third... index. 
         df = df.reindex(
-            sorted(df.columns, key=lambda x: (x[0], x[1], x[2], x[3])), axis=1)
+            sorted(df.columns, key=lambda x: (x[0], x[4], x[2], x[1])), axis=1)
 
 
         # Rename columns:
@@ -168,7 +169,7 @@ def main():
         df.to_pickle(f"{path.stem}.pkl")
     print(time.process_time() - start)
 
-    df.to_excel(f"Max_values_{path.stem}.xlsx")
+    df.to_excel(f"output/Max_values_{path.stem}.xlsx")
     print(time.process_time() - start)
     # df.style.background_gradient(cmap='viridis')
     # df.to_html('test.html')
@@ -177,7 +178,7 @@ def main():
 
 def insert_isocurve_max(timestamp_results,key, distance, releasepoint, result_gdf ):                
     timestamp_results[key._replace(
-        distance=f"{distance} km")] = overlap.get_isocurve_max(distance, releasepoint, result_gdf)
+        distance_km=distance)] = overlap.get_isocurve_max(distance, releasepoint, result_gdf)
     return timestamp_results
 def parse_run(timestamp, run, filelist, args):
     print(f"Reading {run}, {timestamp}")
@@ -190,7 +191,7 @@ def parse_run(timestamp, run, filelist, args):
         filelist = filelist[0:4]
     for file in filelist:
         _, _, key = parse_filename(file)
-        print(f"\t{key.outputname} T:{key.timestep},E: {key.extra}")
+        print(f"\t{key.outputname} T:{key.timestep},E: {key.nuc_or_age}")
         gdf = geopandas.read_file(file)
         if key.timestep > 0 and key.timestep < 48:
             # If the run stops before the first wanted timestep -> move value from "stop-timestep" to first wanted
@@ -209,7 +210,7 @@ def parse_run(timestamp, run, filelist, args):
             timestamp_results[key._replace(
                 area="Tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
 
-            for distance in [.2, 1, 2, 5, 20]:
+            for distance in DISTANCES:
                 timestamp_results = insert_isocurve_max(timestamp_results,key,
                                                         distance, overlap.GROTSUND_COORD, gdf)
 

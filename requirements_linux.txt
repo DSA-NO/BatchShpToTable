@@ -1,0 +1,8 @@
+pandas
+openpyxl
+shapely
+geopandas
+pygeos #for speedup
+matplotlib
+contextily # for plotting
+# 

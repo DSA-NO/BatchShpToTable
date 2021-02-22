@@ -49,7 +49,7 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 'thyrod_bitmp': "Thyroid Organ Dose. Outdoor [Gy]",
                 'gamratetot_bitmp': 'Dose rate [Sv/h]',
                 }
-DISTANCES = [.2, 1., 2., 5., 20.]
+DISTANCES = [.2, 1., 2., 5.,10., 15., 20.]
 
 def parse_filename(filepath):
     # Using the timestamp part of the string as splitter since the rest appears to change.
@@ -110,7 +110,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-i', '--input-folder', type=str, default=r"C:\Utvikling\Argos\BatchShpToTable\indata\arp",
+        '-i', '--input-folder', type=str, default=r"indata/Shape",
         help='Folder with runs')
     parser.add_argument(
         '-p', '--pickle_file', type=str, default=None,
@@ -226,4 +226,9 @@ if __name__ == "__main__":
     #for notebook:
     # sys.argv= ['dummy',"-c"]
     df = main()
+
+    
+# df= pd.read_pickle("grotsund_arp_12h-max.pkl")
+# df2=df.agg(('min','mean','max')).transpose()
+# df2.to_excel("/mnt/hgfs/Utvikling/Argos/BatchShpToTable/grotsund_arp_12h-max.xlsx")
 

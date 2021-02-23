@@ -51,6 +51,8 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 }
 DISTANCES = [.2, 1., 2., 5.,10., 15., 20.]
 
+
+
 def parse_filename(filepath):
     # Using the timestamp part of the string as splitter since the rest appears to change.
     # Regex that matches _202005081553_ in AnlopGrotsund_phase1_250m_202005081553_876000_grid_gamratetot_bitmp_Total
@@ -118,6 +120,10 @@ def main():
     parser.add_argument(
         '-d', '--debug', action='store_true', default=False,
         help='Debug')
+    parser.add_argument(
+        '-s','--summary-map-pattern', type=str, default='',
+        help='Creates a image with all shp files matching "s" summed')
+
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-m', '--shp-max-mode', action='store_true', default=False,
@@ -128,27 +134,22 @@ def main():
     args = parser.parse_args()
     start = time.process_time()
 
+    if args.summary_map_pattern:
+        args.summary_map_pattern = '*'+args.summary_map_pattern
     path = get_folder(args.input_folder)
 
-    runs = {}
     print(time.process_time() - start)
 
     if args.pickle_file:
         df = pd.from_pickle(args.load_pickle)
+    elif args.summary_map_pattern:
+        pass
     else:
-        for shp_file in path.glob("**/*.shp"):
-            runname, timestamp, _ = parse_filename(shp_file)
-            runs.setdefault(runname, {})
-            runs[runname].setdefault(timestamp, [])
-            runs[runname][timestamp].append(shp_file)
+        runs = get_runs(args, path)
 
         print(time.process_time() - start)
 
-        rows = []
-        for r, (run, timestamps) in enumerate(runs.items()):
-            print(f"Run {r}/{len(runs)}")
-            for timestamp, filelist in timestamps.items():
-                rows.append(parse_run(timestamp, run, filelist, args))
+        rows = parse_all_runs(args, runs)
 
         df = pd.DataFrame(rows)
         print(time.process_time() - start)
@@ -174,6 +175,23 @@ def main():
     # df.style.background_gradient(cmap='viridis')
     # df.to_html('test.html')
     return df
+
+def parse_all_runs(args, runs):
+    rows = []
+    for r, (run, timestamps) in enumerate(runs.items()):
+        print(f"Run {r}/{len(runs)}")
+        for timestamp, filelist in timestamps.items():
+            rows.append(parse_run(timestamp, run, filelist, args))
+    return rows
+
+def get_runs(args, path):
+    runs = {}
+    for shp_file in path.glob(f"**/{args.summary_map_pattern}*.shp"):
+        runname, timestamp, _ = parse_filename(shp_file)
+        runs.setdefault(runname, {})
+        runs[runname].setdefault(timestamp, [])
+        runs[runname][timestamp].append(shp_file)
+    return runs
 
 
 def insert_isocurve_max(timestamp_results,key, distance, releasepoint, result_gdf ):                
@@ -206,6 +224,9 @@ def parse_run(timestamp, run, filelist, args):
                 key = key48
         if args.shp_max_mode:
             timestamp_results[key] = get_gdf_max(gdf)['max']
+        elif args.summary_map_pattern:
+            
+            pass
         else:
             timestamp_results[key._replace(
                 area="Tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
@@ -227,8 +248,20 @@ if __name__ == "__main__":
     # sys.argv= ['dummy',"-c"]
     df = main()
 
-    
-# df= pd.read_pickle("grotsund_arp_12h-max.pkl")
-# df2=df.agg(('min','mean','max')).transpose()
-# df2.to_excel("/mnt/hgfs/Utvikling/Argos/BatchShpToTable/grotsund_arp_12h-max.xlsx")
+# %%   
+# 
 
+exit()
+def percentile(n):
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = 'percentile_{:2.0f}'.format(n*100)
+    return percentile_
+    
+df= pd.read_pickle("grotsund_arp_12h-max.pkl")
+# 5 og 95 percentil, cou
+df2=df.agg(('min','mean','max', 'median',percentile(.05), percentile(.95),  'count')).transpose()
+df2.to_excel("/mnt/hgfs/Utvikling/Argos/BatchShpToTable/grotsund_arp_12h-max.xlsx")
+
+
+# %%

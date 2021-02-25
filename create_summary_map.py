@@ -1,5 +1,4 @@
 # %%
-
 import geopandas
 from pathlib import Path
 from tkinter import filedialog
@@ -18,12 +17,14 @@ import argparse
 import time
 # %%
 
+
 class RunMetadata(NamedTuple):
     outputname: str
     timestep: str
     distance_km: float = None
     area: str = ''
     nuc_or_age: str = ''
+
 
 def parse_filename(filepath):
     # Using the timestamp part of the string as splitter since the rest appears to change.
@@ -59,6 +60,7 @@ def parse_filename(filepath):
                       timestep=timestep, nuc_or_age=extra)
 
     return runname, timestamp, key
+
 
 def get_folder(run_folder):
     """Retur folder as a path object or open selector GUI if no folder selected
@@ -104,29 +106,29 @@ def main():
     else:
         runs = get_runs(args, path)
 
+        runs = parse_all_runs(args, runs)
 
-        df = parse_all_runs(args, runs)
+        df = pd.concat(runs)
         df = df.groupby('geom_str').agg('sum')
 
         df.reset_index(inplace=True)
-        # print(time.process_time() - start)
+
         df.to_pickle(f"{path.stem}{args.summary_map_pattern[1:]}_summary.pkl")
-    # print(time.process_time() - start)
+    print(time.process_time() - start)
     print(f"Final rows {len(df.index)}")
 
-    df['geometry'] = df['geom_str'].apply(wkb.loads) 
+    df['geometry'] = df['geom_str'].apply(wkb.loads)
     df.plot(column='Value')
     return df
 
 
 def parse_all_runs(args, runs):
-    df = pd.DataFrame()
+    all_results = []
     for r, (run, timestamps) in enumerate(runs.items()):
         print(f"Run {r}/{len(runs)}")
         for timestamp, filelist in timestamps.items():
-            df = pd.concat([df, *parse_run(timestamp, run, filelist, args)])
-            df = df.groupby('geom_str').agg('sum')
-    return df
+            all_results.extend(parse_run(timestamp, run, filelist, args))
+    return all_results
 
 
 def get_runs(args, path):
@@ -143,6 +145,7 @@ def parse_run(timestamp, run, filelist, args):
     print(f"Reading {run}, {timestamp}")
 
     all_df = []
+
     if args.debug:
         print("DEBUG Truncating to 4")
         filelist = filelist[0:4]

@@ -54,8 +54,12 @@ DISTANCES = [.2, 1., 2., 5.,10., 15., 20.]
 
 
 def parse_filename(filepath):
+    # Row 1 in the shp contains the same data (- start time):
+    # df.iloc[0]
+
     # Using the timestamp part of the string as splitter since the rest appears to change.
     # Regex that matches _202005081553_ in AnlopGrotsund_phase1_250m_202005081553_876000_grid_gamratetot_bitmp_Total
+    
     filename = filepath.stem
     timestamp = re.findall(r"_[0-9]{12}_", filename)[0]
     runname, right_part = filename.split(timestamp)
@@ -245,23 +249,32 @@ if __name__ == "__main__":
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
 
     #for notebook:
-    # sys.argv= ['dummy',"-c"]
+    # 
     df = main()
 
-# %%   
-# 
+def notebook_args():
+    # %%
+    """Dummy for notebook argsparse. Run first"""
+    sys.argv = ['dummy', "-c", "-i",
+                "indata\\20200616T190500Z\\Shape"]
+    # %%
 
-exit()
-def percentile(n):
-    def percentile_(x):
-        return x.quantile(n)
-    percentile_.__name__ = 'percentile_{:2.0f}'.format(n*100)
-    return percentile_
-    
-df= pd.read_pickle("grotsund_arp_12h-max.pkl")
-# 5 og 95 percentil, cou
-df2=df.agg(('min','mean','max', 'median',percentile(.05), percentile(.95),  'count')).transpose()
-df2.to_excel("/mnt/hgfs/Utvikling/Argos/BatchShpToTable/grotsund_arp_12h-max.xlsx")
+
+def create_summary():
+    """Dummy function for notebooks
+    """
+    # %%
+    def percentile(n):
+        def percentile_(x):
+            return x.quantile(n)
+        percentile_.__name__ = 'percentile_{:2.0f}'.format(n*100)
+        return percentile_
+        
+    df= pd.read_pickle("grotsund_arp_12h-max.pkl")
+    # 5 og 95 percentil, cou
+    df2=df.agg(('min','mean','max', 'median',percentile(.05), percentile(.95),  'count')).transpose()
+    df2.to_excel("/mnt/hgfs/Utvikling/Argos/BatchShpToTable/grotsund_arp_12h-max.xlsx")
+    # %%
 
 
 # %%

@@ -1,4 +1,5 @@
 # %%
+
 import geopandas
 from pathlib import Path
 from tkinter import filedialog
@@ -8,7 +9,7 @@ from typing import NamedTuple
 from collections import namedtuple
 import re
 import pandas as pd
-from shapely import wkt
+from shapely import wkb
 
 import matplotlib.pyplot as plt
 # import contextily as cx
@@ -89,7 +90,7 @@ def main():
         '-s', '--summary-map-pattern', type=str, default='',
         help='Creates a image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
 
-    print("Remeber to inluclude timstamp in pattern for doses!")
+    print("Remember to inluclude timstamp in pattern for doses!")
 
     args = parser.parse_args()
     start = time.process_time()
@@ -103,33 +104,29 @@ def main():
     else:
         runs = get_runs(args, path)
 
-        print(time.process_time() - start)
 
-        runs = parse_all_runs(args, runs)
-
-        df = pd.concat(runs)
+        df = parse_all_runs(args, runs)
         df = df.groupby('geom_str').agg('sum')
 
-        print(time.process_time() - start)
-
         df.reset_index(inplace=True)
-        df['geometry'] = df['geom_str'].apply(wkt.loads)
-        print(time.process_time() - start)
-        df.to_pickle(f"{path.stem}_summary.pkl")
-    print(time.process_time() - start)
-    print(f"Rows {len(df.index)}")
+        # print(time.process_time() - start)
+        df.to_pickle(f"{path.stem}{args.summary_map_pattern[1:]}_summary.pkl")
+    # print(time.process_time() - start)
+    print(f"Final rows {len(df.index)}")
 
+    df['geometry'] = df['geom_str'].apply(wkb.loads) 
     df.plot(column='Value')
     return df
 
 
 def parse_all_runs(args, runs):
-    all_results = []
+    df = pd.DataFrame()
     for r, (run, timestamps) in enumerate(runs.items()):
         print(f"Run {r}/{len(runs)}")
         for timestamp, filelist in timestamps.items():
-            all_results.extend(parse_run(timestamp, run, filelist, args))
-    return all_results
+            df = pd.concat([df, *parse_run(timestamp, run, filelist, args)])
+            df = df.groupby('geom_str').agg('sum')
+    return df
 
 
 def get_runs(args, path):
@@ -146,7 +143,6 @@ def parse_run(timestamp, run, filelist, args):
     print(f"Reading {run}, {timestamp}")
 
     all_df = []
-
     if args.debug:
         print("DEBUG Truncating to 4")
         filelist = filelist[0:4]
@@ -158,7 +154,8 @@ def parse_run(timestamp, run, filelist, args):
             # If the run stops before the first wanted timestep -> move value from "stop-timestep" to first wanted
             print(f"\tOverriding timestep {key.timestep}h to 48h")
         print(f"Rows {len(gdf.index)}")
-        gdf['geom_str'] = gdf.geometry.apply(lambda x: wkt.dumps(x))
+        gdf['geom_str'] = gdf.geometry.apply(lambda x: wkb.dumps(x))
+        gdf.drop(columns='geometry', inplace=True)
         all_df.append(gdf)
 
     return all_df

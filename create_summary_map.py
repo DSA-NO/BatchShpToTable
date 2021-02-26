@@ -1,4 +1,6 @@
 # %%
+from logging import CRITICAL
+from tkinter.constants import FALSE
 import geopandas
 from pathlib import Path
 from tkinter import filedialog
@@ -17,7 +19,18 @@ import argparse
 import time
 # %%
 
+PLOT=False
+# Nordic flagbook critera
+DOSE_CRITERIA = {
+    'iodine_child': 10,  # mGy
+    'iodine_adult': 50,  # mGy
+    'evac': 0,
+    'sheltering_partial': 1, # mSv
+    'sheltering_full': 10,   # mSv
+        }
 
+DOSE_CRITERIA_SI = {k:v/1000 for k,v in DOSE_CRITERIA.items() }
+# %%
 class RunMetadata(NamedTuple):
     outputname: str
     timestep: str
@@ -89,16 +102,20 @@ def main():
         '-d', '--debug', action='store_true', default=False,
         help='Debug')
     parser.add_argument(
-        '-s', '--summary-map-pattern', type=str, default='',
+        'summary_pattern', type=str,
         help='Creates a image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
+
+    parser.add_argument(
+        '-c', '--critera', type=str, default=None,
+        help=f'compare with critera from {DOSE_CRITERIA} ')
 
     print("Remember to inluclude timstamp in pattern for doses!")
 
     args = parser.parse_args()
     start = time.process_time()
 
-    if args.summary_map_pattern:
-        args.summary_map_pattern = '*'+args.summary_map_pattern
+    if args.summary_pattern:
+        args.summary_pattern = '*'+args.summary_pattern
     path = get_folder(args.input_folder)
 
     if args.pickle_file:
@@ -109,16 +126,24 @@ def main():
         runs = parse_all_runs(args, runs)
 
         df = pd.concat(runs)
-        df = df.groupby('geom_str').agg('sum')
 
         df.reset_index(inplace=True)
 
-        df.to_pickle(f"{path.stem}{args.summary_map_pattern[1:]}_summary.pkl")
+        df.to_pickle(f"{path.stem}{args.summary_pattern[1:]}_full.pkl")
+        df = df.groupby('geom_str').agg('sum')
+        df.to_pickle(f"{path.stem}{args.summary_pattern[1:]}_summary.pkl")
     print(time.process_time() - start)
     print(f"Final rows {len(df.index)}")
+    df.reset_index(inplace=True)
 
-    df['geometry'] = df['geom_str'].apply(wkb.loads)
-    df.plot(column='Value')
+    if PLOT:
+        df['geometry'] = df['geom_str'].apply(wkb.loads)
+        df.plot(column='Value')
+
+
+    df.drop(columns='geom_str', inplace=True)
+    # df.to_file("map_summary")
+    
     return df
 
 
@@ -133,7 +158,7 @@ def parse_all_runs(args, runs):
 
 def get_runs(args, path):
     runs = {}
-    for shp_file in path.glob(f"**/{args.summary_map_pattern}*.shp"):
+    for shp_file in path.glob(f"**/{args.summary_pattern}*.shp"):
         runname, timestamp, _ = parse_filename(shp_file)
         runs.setdefault(runname, {})
         runs[runname].setdefault(timestamp, [])
@@ -159,6 +184,9 @@ def parse_run(timestamp, run, filelist, args):
         print(f"Rows {len(gdf.index)}")
         gdf['geom_str'] = gdf.geometry.apply(lambda x: wkb.dumps(x))
         gdf.drop(columns='geometry', inplace=True)
+
+        if args.critera:
+            gdf.Value = (gdf.Value > DOSE_CRITERIA_SI.get(args.critera)).astype(int)
         all_df.append(gdf)
 
     return all_df
@@ -167,7 +195,8 @@ def parse_run(timestamp, run, filelist, args):
 # %%
 if __name__ == "__main__":
     # %%
-    sys.argv = ["1",'-s' '876000_grid_gamratetot_bitmp_Total', '-i', 'indata/arp']
+    sys.argv = ["1", '876000_grid_gamratetot_bitmp_Total',
+                '-i', 'indata/arp']
     # %%
     df = main()
     # %%

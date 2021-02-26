@@ -129,9 +129,11 @@ def main():
 
         df.reset_index(inplace=True)
 
-        df.to_pickle(f"{path.stem}{args.summary_pattern[1:]}_full.pkl")
+        df.to_pickle(
+            f"{path.stem}{args.summary_pattern[1:]}_{args.critera}_full.pkl")
         df = df.groupby('geom_str').agg('sum')
-        df.to_pickle(f"{path.stem}{args.summary_pattern[1:]}_summary.pkl")
+        df.to_pickle(
+            f"{path.stem}{args.summary_pattern[1:]}_{args.critera}_summary.pkl")
     print(time.process_time() - start)
     print(f"Final rows {len(df.index)}")
     df.reset_index(inplace=True)
@@ -195,8 +197,8 @@ def parse_run(timestamp, run, filelist, args):
 # %%
 if __name__ == "__main__":
     # %%
-    sys.argv = ["1", '876000_grid_gamratetot_bitmp_Total',
-                '-i', 'indata/arp']
+    # sys.argv = ["1", '876000_grid_gamratetot_bitmp_Total',
+    #             '-i', 'indata/arp']
     # %%
     df = main()
     # %%

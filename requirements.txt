@@ -7,8 +7,8 @@ openpyxl
 ./whl/pyproj-3.0.0.post1-cp38-cp38-win_amd64.whl
 # ./whl/Rtree-0.9.7-cp38-cp38-win_amd64.whl
 rtree #now on pip
-C:\Utvikling\python_GIS_whl\rasterio-1.2.0-cp38-cp38-win_amd64.whl
-C:\Utvikling\python_GIS_whl\GDAL-3.1.4-cp38-cp38-win_amd64.whl
+./whl/rasterio-1.1.8-cp38-cp38-win_amd64.whl
+./whl/GDAL-3.1.4-cp38-cp38-win_amd64.whl
 contextily
 shapely
 geopandas

@@ -1,13 +1,11 @@
 # %%
-from logging import CRITICAL
-from tkinter.constants import FALSE
 import geopandas
 from pathlib import Path
 from tkinter import filedialog
 import tkinter as tk
 import sys
 from typing import NamedTuple
-from collections import namedtuple
+# from collections import namedtuple
 import re
 import pandas as pd
 from shapely import wkb
@@ -17,19 +15,10 @@ import matplotlib.pyplot as plt
 
 import argparse
 import time
-# %%
+#  %%
+#
 
-PLOT=False
-# Nordic flagbook critera
-DOSE_CRITERIA = {
-    'iodine_child': 10,  # mGy
-    'iodine_adult': 50,  # mGy
-    'evac': 0,
-    'sheltering_partial': 1, # mSv
-    'sheltering_full': 10,   # mSv
-        }
 
-DOSE_CRITERIA_SI = {k:v/1000 for k,v in DOSE_CRITERIA.items() }
 # %%
 class RunMetadata(NamedTuple):
     outputname: str
@@ -105,9 +94,6 @@ def main():
         'summary_pattern', type=str,
         help='Creates a image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
 
-    parser.add_argument(
-        '-c', '--critera', type=str, default=None,
-        help=f'compare with critera from {DOSE_CRITERIA} ')
 
     print("Remember to inluclude timstamp in pattern for doses!")
 
@@ -129,22 +115,20 @@ def main():
 
         df.reset_index(inplace=True)
 
-        df.to_pickle(
-            f"{path.stem}{args.summary_pattern[1:]}_{args.critera}_full.pkl")
-        df = df.groupby('geom_str').agg('sum')
-        df.to_pickle(
-            f"{path.stem}{args.summary_pattern[1:]}_{args.critera}_summary.pkl")
+        outfile_full= f"{path.stem}{args.summary_pattern[1:]}__full.pkl"
+        df.to_pickle(outfile_full
+            )
+        print(f"written {outfile_full}")
+
+    df = df.groupby('geom_str').agg('sum')
+    df.to_pickle(
+                f"{path.stem}{args.summary_pattern[1:]}__summary.pkl")
     print(time.process_time() - start)
     print(f"Final rows {len(df.index)}")
     df.reset_index(inplace=True)
 
-    if PLOT:
-        df['geometry'] = df['geom_str'].apply(wkb.loads)
-        df.plot(column='Value')
-
 
     df.drop(columns='geom_str', inplace=True)
-    # df.to_file("map_summary")
     
     return df
 
@@ -185,10 +169,10 @@ def parse_run(timestamp, run, filelist, args):
             print(f"\tOverriding timestep {key.timestep}h to 48h")
         print(f"Rows {len(gdf.index)}")
         gdf['geom_str'] = gdf.geometry.apply(lambda x: wkb.dumps(x))
-        gdf.drop(columns='geometry', inplace=True)
+        # gdf.drop(columns='geometry', inplace=True)
+        gdf = gdf[['Value', 'geom_str']]
 
-        if args.critera:
-            gdf.Value = (gdf.Value > DOSE_CRITERIA_SI.get(args.critera)).astype(int)
+
         all_df.append(gdf)
 
     return all_df

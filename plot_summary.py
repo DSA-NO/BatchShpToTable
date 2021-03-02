@@ -8,6 +8,7 @@ import mapclassify
 import contextily as cx
 import matplotlib.pyplot as plt
 import overlap
+import sys
 
 """
 Script that reads a pickle file and plots with a background map using contextily.
@@ -45,10 +46,11 @@ def read_df(run):
     # gdf.to_file(f"{run}_shp")
 
     return gdf
-
+# %%
 def plot(run, critera=''):
-
+    # %%
     gdf = read_df(run)
+    # %%
     run = run.replace(".pkl",'_')
     fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
 
@@ -78,40 +80,48 @@ def plot(run, critera=''):
     # ax.set_title('title')
     ax.set_xlabel('')
     ax.set_ylabel('')
+    ax.margins(0)
+    ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
+
+    # plt.savefig('sample.png', bbox_inches="tight", pad_inches=0)
 
     ax.axes.xaxis.set_visible(False)
     ax.axes.yaxis.set_visible(False)
     plt.tight_layout()
+    fig.tight_layout()
+    fig.canvas.start_event_loop(sys.float_info.min) #workaround for Exception in Tkinter callback
 
-    fig.savefig(f"{run}{critera}.png")
+    fig.savefig(f"{run}{critera}.png", bbox_inches='tight')
     print(f'Saved {run}{critera}.png')
+    # %%
 
+
+def create_all(base):
+    # Full sheltering
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    plot(run, 'sheltering_full')
+
+
+    # Partial sheltering
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    plot(run, 'sheltering_partial')
+
+    # Iodine  1 year old
+    run = f'{base}hyrod_bitmp_1year_Tota__full.pkl'
+    plot(run, 'iodine_child')
+
+    # Iodine  Adult
+    run = f'{base}hyrod_bitmp_Adults_Tota__full.pkl'
+    plot(run, 'iodine_adult')
+
+    # Evac adult
+    run =f'{base}16800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    plot(run, 'evac')
 if __name__ == '__main__':
     base5km = 'grotsund_arp_12h-100m_5km'
     base60km = 'grotsund_arp_12h-max'
 
 
-    def create_all(base):
-        # Full sheltering
-        run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
-        plot(run, 'sheltering_full')
-
-
-        # Partial sheltering
-        run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
-        plot(run, 'sheltering_partial')
-
-        # Iodine  1 year old
-        run = f'{base}hyrod_bitmp_1year_Tota__full.pkl'
-        plot(run, 'iodine_child')
-
-        # Iodine  Adult
-        run = f'{base}hyrod_bitmp_Adults_Tota__full.pkl'
-        plot(run, 'iodine_adult')
-
-        # Evac adult
-        run =f'{base}16800_grid_toteffout_bitmp_Adults_Total__full.pkl'
-        plot(run, 'evac')
-    
+   
     create_all(base5km)
     create_all(base60km)

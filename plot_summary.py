@@ -7,16 +7,17 @@ from shapely import wkb
 import mapclassify
 import contextily as cx
 import matplotlib.pyplot as plt
+import matplotlib
 import overlap
 import sys
 
 """
 Script that reads a pickle file and plots with a background map using contextily.
 
-Using 'max' as aggregator show cells where the limit is ever exceeded IF .pkl is 0/1 based on critera. 
+Using 'max' as aggregator show cells where the limit is ever exceeded IF .pkl is 0/1 based on criteria. 
 Use 'max' or 'mean' on full input. 
 """
-# Nordic flagbook critera
+# Nordic flagbook criteria
 DOSE_CRITERIA = {
     'iodine_child': 10,  # mGy end pf run
     'iodine_adult': 50,  # mGy end pf run
@@ -47,7 +48,7 @@ def read_df(run):
 
     return gdf
 # %%
-def plot(run, critera=''):
+def plot(run, criteria=''):
     # %%
     gdf = read_df(run)
     # %%
@@ -55,10 +56,10 @@ def plot(run, critera=''):
     fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
 
     gdf_out = gdf[gdf.Value > 0] # for speedup
-    if critera:
-        gdf_out.Value = (gdf_out.Value > DOSE_CRITERIA_SI.get(critera)).astype(int)
+    if criteria:
+        gdf_out.Value = (gdf_out.Value > DOSE_CRITERIA_SI.get(criteria)).astype(int)
 
-        # New zeros whrn critera applied: 
+        # New zeros whrn criteria applied: 
         gdf_out = gdf_out[gdf_out.Value > 0]
     gdf_out = gdf_out.set_crs('EPSG:4326')
 
@@ -67,10 +68,18 @@ def plot(run, critera=''):
     gdf_out.plot(ax=ax)
 
     minx, miny, maxx, maxy = gdf_out.geometry.total_bounds
-
     padding_m = 9000
     ax.set_xlim(minx - padding_m, maxx + padding_m)
     ax.set_ylim(miny - padding_m, maxy + padding_m)
+
+    #Add scale-bar
+    x, y, scale_len = maxx+padding_m-2500, miny-padding_m+200, 2000 #arrowstyle='-'
+    scale_rect = matplotlib.patches.Rectangle((x,y),scale_len,100,linewidth=0.5,edgecolor='k',facecolor='k')
+    ax.add_patch(scale_rect)
+    plt.text(x+scale_len/2, y+300, s='2 KM', fontsize=6, horizontalalignment='center')
+
+
+
 
     basemap = cx.providers.CartoDB.Voyager
     #basemap = cx.providers.Stamen.Terrain
@@ -91,12 +100,22 @@ def plot(run, critera=''):
     fig.tight_layout()
     fig.canvas.start_event_loop(sys.float_info.min) #workaround for Exception in Tkinter callback
 
-    fig.savefig(f"{run}{critera}.png", bbox_inches='tight')
-    print(f'Saved {run}{critera}.png')
+    fig.savefig(f"{run}{criteria}.png", bbox_inches='tight')
+    print(f'Saved {run}{criteria}.png')
+# %%
+# %%
+
+def notebook_dummy():
+    """Run below cell and then cells inside plot()
+    """
     # %%
+    base = 'grotsund_arp_12h-100m_5km'
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    criteria = 'evac'
 
-
+    # %%
 def create_all(base):
+    # %%
     # Full sheltering
     run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
     plot(run, 'sheltering_full')

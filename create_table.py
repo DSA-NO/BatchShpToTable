@@ -49,7 +49,9 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 'thyrod_bitmp': "Thyroid Organ Dose. Outdoor [Gy]",
                 'gamratetot_bitmp': 'Dose rate [Sv/h]',
                 }
-DISTANCES = [.2, 1., 2., 5.,10., 15., 20.]
+DISTANCES = {
+    'short': [0.1, .2,.3, .4,.5, .6, .8, 1., 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.5, 4, 4.5],
+    'long' : [4., 5.,6., 7. , 8., 9., 10., 12, 15, 20, 25, 30, 35, 40, 45, 50, 55]}
 
 
 
@@ -127,6 +129,9 @@ def main():
     parser.add_argument(
         '-s','--summary-map-pattern', type=str, default='',
         help='Creates a image with all shp files matching "s" summed')
+    parser.add_argument(
+        '--distances',choices=DISTANCES.keys(), default='long',
+        help=f'Isocurve distances to use')       
 
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -137,6 +142,7 @@ def main():
 
     args = parser.parse_args()
     start = time.process_time()
+
 
     if args.summary_map_pattern:
         args.summary_map_pattern = '*'+args.summary_map_pattern
@@ -235,7 +241,7 @@ def parse_run(timestamp, run, filelist, args):
             timestamp_results[key._replace(
                 area="Tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
 
-            for distance in DISTANCES:
+            for distance in DISTANCES.get(args.distances):
                 timestamp_results = insert_isocurve_max(timestamp_results,key,
                                                         distance, overlap.GROTSUND_COORD, gdf)
 
@@ -247,7 +253,7 @@ def parse_run(timestamp, run, filelist, args):
 if __name__ == "__main__":
     # Slice by nested:
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
-
+    # sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -c".split()
     #for notebook:
     # 
     df = main()
@@ -257,6 +263,7 @@ def notebook_args():
     """Dummy for notebook argsparse. Run first"""
     sys.argv = ['dummy', "-c", "-i",
                 "indata\\20200616T190500Z\\Shape"]
+                
     # %%
 
 

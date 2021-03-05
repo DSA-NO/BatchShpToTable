@@ -11,3 +11,4 @@ settings.json
 *.xlsx
 *.pkl
 test2/*
+output/*

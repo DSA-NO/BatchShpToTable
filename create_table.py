@@ -51,7 +51,7 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 }
 DISTANCES = {
     'short': [0.1, .2,.3, .4,.5, .6, .8, 1., 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.5, 4, 4.5],
-    'long' : [4., 5.,6., 7. , 8., 9., 10., 12, 15, 20, 25, 30, 35, 40, 45, 50, 55]}
+    'long' : [4, 6, 8, 10., 12, 15, 20, 30, 40, 50,60 70, 80, 90]}
 
 
 
@@ -221,26 +221,9 @@ def parse_run(timestamp, run, filelist, args):
         _, _, key = parse_filename(file)
         print(f"\t{key.outputname} T:{key.timestep},E: {key.nuc_or_age}")
         gdf = geopandas.read_file(file)
-        if key.timestep > 0 and key.timestep < 48:
-            # If the run stops before the first wanted timestep -> move value from "stop-timestep" to first wanted
-            print(f"\tOverriding timestep {key.timestep}h to 48h")
-            key48 = key._replace(timestep=48)
-            # Warn that the key doesn't exist. Overwriting should not happen
-            if key48 in timestamp_results.keys():
-                print(
-                    f"Warning, override 48h key already existing. {key}. \nOld:{timestamp_results[key48]}\nNew: {gdf['max']} ")
-                exit()
-            else:
-                key = key48
         if args.shp_max_mode:
             timestamp_results[key] = get_gdf_max(gdf)['max']
-        elif args.summary_map_pattern:
-            
-            pass
         else:
-            timestamp_results[key._replace(
-                area="Tromsø")] = overlap.get_area_max(overlap.tromso_area, gdf)
-
             for distance in DISTANCES.get(args.distances):
                 timestamp_results = insert_isocurve_max(timestamp_results,key,
                                                         distance, overlap.GROTSUND_COORD, gdf)

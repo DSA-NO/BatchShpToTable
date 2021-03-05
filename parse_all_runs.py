@@ -17,7 +17,9 @@ import argparse
 import time
 #  %%
 #
-
+"""
+Parses all shape files and stores the complete grid in a dataframe
+"""
 
 # %%
 class RunMetadata(NamedTuple):
@@ -92,7 +94,7 @@ def main():
         help='Debug')
     parser.add_argument(
         'summary_pattern', type=str,
-        help='Creates a image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
+        help='Creates an image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
 
 
     print("Remember to inluclude timstamp in pattern for doses!")
@@ -164,9 +166,6 @@ def parse_run(timestamp, run, filelist, args):
         _, _, key = parse_filename(file)
         print(f"\t{key.outputname} T:{key.timestep},E: {key.nuc_or_age} {file.name}")
         gdf = geopandas.read_file(file)
-        if key.timestep > 0 and key.timestep < 48:
-            # If the run stops before the first wanted timestep -> move value from "stop-timestep" to first wanted
-            print(f"\tOverriding timestep {key.timestep}h to 48h")
         print(f"Rows {len(gdf.index)}")
         gdf['geom_str'] = gdf.geometry.apply(lambda x: wkb.dumps(x))
         # gdf.drop(columns='geometry', inplace=True)

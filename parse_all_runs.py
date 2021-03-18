@@ -117,7 +117,7 @@ def main():
 
         df.reset_index(inplace=True)
 
-        outfile_full= f"{path.stem}{args.summary_pattern[1:]}__full.pkl"
+        outfile_full= f"{path.stem}{args.summary_pattern[1:]}__full.pkl.bz2"
         df.to_pickle(outfile_full
             )
         print(f"written {outfile_full}")

@@ -52,7 +52,7 @@ def plot(run, criteria=''):
     # %%
     gdf = read_df(run)
     # %%
-    run = run.replace(".pkl",'_')
+    run = run.replace(".pkl.bz2",'_')
     fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
 
     gdf_out = gdf[gdf.Value > 0] # for speedup
@@ -65,10 +65,11 @@ def plot(run, criteria=''):
 
     gdf_out.to_crs('EPSG:25833', inplace=True)
 
-    gdf_out.plot(ax=ax)
+    gdf_out.plot(ax=ax, edgecolor="face", linewidth=1)
+
 
     minx, miny, maxx, maxy = gdf_out.geometry.total_bounds
-    padding_m = 9000
+    padding_m = (maxx-minx)/100*100*.66
     ax.set_xlim(minx - padding_m, maxx + padding_m)
     ax.set_ylim(miny - padding_m, maxy + padding_m)
 
@@ -78,7 +79,10 @@ def plot(run, criteria=''):
     ax.add_patch(scale_rect)
     plt.text(x+scale_len/2, y+300, s='2 KM', fontsize=6, horizontalalignment='center')
 
-
+    # Add release point
+    releasepoint = overlap.create_point(overlap.GROTSUND_COORD)
+    releasepoint.plot(ax=ax, color='k', marker='x', markersize=150)
+    # plt.plot([overlap.GROTSUND_COORD[0]], [overlap.GROTSUND_COORD[1]], '+', color='black', markersize=15)
 
 
     basemap = cx.providers.CartoDB.Voyager
@@ -110,31 +114,31 @@ def notebook_dummy():
     """
     # %%
     base = 'grotsund_arp_12h-100m_5km'
-    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
     criteria = 'evac'
 
     # %%
 def create_all(base):
     # %%
     # Full sheltering
-    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
     plot(run, 'sheltering_full')
 
 
     # Partial sheltering
-    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
     plot(run, 'sheltering_partial')
 
     # Iodine  1 year old
-    run = f'{base}hyrod_bitmp_1year_Tota__full.pkl'
+    run = f'{base}hyrod_bitmp_1year_Tota__full.pkl.bz2'
     plot(run, 'iodine_child')
 
     # Iodine  Adult
-    run = f'{base}hyrod_bitmp_Adults_Tota__full.pkl'
+    run = f'{base}hyrod_bitmp_Adults_Tota__full.pkl.bz2'
     plot(run, 'iodine_adult')
 
     # Evac adult
-    run =f'{base}16800_grid_toteffout_bitmp_Adults_Total__full.pkl'
+    run =f'{base}16800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
     plot(run, 'evac')
 if __name__ == '__main__':
     base5km = 'grotsund_arp_12h-100m_5km'

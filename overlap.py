@@ -7,6 +7,8 @@ import geopandas
 from typing import NewType, TypeVar
 from functools import lru_cache
 
+
+KJELLER_COORD = (11.051946, 59.974542) # opposite of  lon/lat than google maps..
 GROTSUND_COORD = (19.139001, 69.747223) # opposite of  lon/lat than google maps..
 tromso_area = geopandas.read_file('kart/tromso2.shp')
 
@@ -24,17 +26,21 @@ def get_area_max(area, dep_df):
 
 Isocurve = NewType('Isocurve', shapely.geometry.LinearRing)
 
-
-
 @lru_cache
-def isocurve(distance_km, startingpoint: tuple) -> Isocurve:
-    print(f"creating {distance_km} km isocurve")
+def create_point(startingpoint: tuple):
     p = shapely.geometry.Point(([startingpoint[0], startingpoint[1]]))
     areas = gpd.GeoDataFrame(columns=['name', 'geometry'])
     areas.loc[0] = ("point", p)
 
     areas = areas.set_crs(epsg=4326)
     areas = areas.to_crs(epsg=25833)
+    return areas
+
+@lru_cache
+def isocurve(distance_km, startingpoint: tuple) -> Isocurve:
+    print(f"creating {distance_km} km isocurve")
+
+    areas = create_point(startingpoint)
 
     areas.loc[1] = (
         distance_km, areas.loc[0].geometry.buffer(distance_km*1000))

@@ -18,7 +18,7 @@ distances = [float(x.strip(" km")) for x in values.reset_index().Distance]
 
 circs = []
 for d,dist in enumerate(distances):
-    ring = overlap.isocurve(dist, overlap.GROTSUND_COORD)
+    ring = overlap.isocurve(dist, overlap.KJELLER_COORD)
     # ring.geometry = shapely.geometry.Polygon(ring.geometry.iloc[0])
     ring.geometry = [Polygon(mapping(x)['coordinates']) for x in ring.geometry]
     circs.append(ring)

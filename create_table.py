@@ -51,7 +51,7 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 }
 DISTANCES = {
     'short': [0.1, .2,.3, .4,.5, .6, .8, 1., 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.5, 4, 4.5],
-    'long' : [4, 80]}
+    'long' : [4, 6, 8, 10., 12, 15, 20, 30, 40, 50,60 70, 80, 90]}
 
 
 
@@ -226,7 +226,7 @@ def parse_run(timestamp, run, filelist, args):
         else:
             for distance in DISTANCES.get(args.distances):
                 timestamp_results = insert_isocurve_max(timestamp_results,key,
-                                                        distance, overlap.KJELLER_COORD, gdf)
+                                                        distance, overlap.GROTSUND_COORD, gdf)
 
     return timestamp_results
 
@@ -236,7 +236,7 @@ def parse_run(timestamp, run, filelist, args):
 if __name__ == "__main__":
     # Slice by nested:
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
-    sys.argv = r"dummy -i E:\ArgosBatch\nuklidetest\full -c".split()
+    # sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -c".split()
     #for notebook:
     # 
     df = main()

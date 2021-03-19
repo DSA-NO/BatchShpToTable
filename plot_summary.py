@@ -143,10 +143,10 @@ def create_all(base):
 
 
 # %%
-def plot_run_boundary():
+def plot_run_boundary65km():
     # %%
     from shapely.geometry import Polygon, mapping
-    run = "run_boundary"
+    run = "run_boundary65km"
     ring = overlap.isocurve(65,overlap.GROTSUND_COORD)
     fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
 
@@ -174,8 +174,8 @@ def plot_run_boundary():
 
     basemap = cx.providers.CartoDB.Voyager
     #basemap = cx.providers.Stamen.Terrain
-    # cx.add_basemap(ax, crs="EPSG:25833", source=basemap,
-    #             attribution=f"Bakgrunnskart: {basemap.attribution}", attribution_size=6)
+    cx.add_basemap(ax, crs="EPSG:25833", source=basemap,
+                attribution=f"Bakgrunnskart: {basemap.attribution}", attribution_size=6)
 
     # ax.set_title('title')
     ax.set_xlabel('')
@@ -195,13 +195,66 @@ def plot_run_boundary():
     print(f'Saved {run}.png')
     # %%
 
+def plot_run_boundary5km():
+    # %%
+    from shapely.geometry import Polygon, mapping
+    run = "run_boundary5km"
+    ring = overlap.isocurve(5,overlap.GROTSUND_COORD)
+    fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
+
+    ring = ring.set_crs('EPSG:4326')
+
+    ring.to_crs('EPSG:25833', inplace=True)
+    ring.geometry = [Polygon(mapping(x)['coordinates']) for x in ring.geometry]
+
+    minx, miny, maxx, maxy = ring.geometry.total_bounds
+    padding_m = (maxx-minx)/100*100*.15
+    ax.set_xlim(minx - padding_m, maxx + padding_m)
+    ax.set_ylim(miny - padding_m, maxy + padding_m)
+
+    #Add scale-bar
+    x, y, scale_len = maxx+padding_m-2500, miny-padding_m+200, 2000 #arrowstyle='-'
+    scale_rect = matplotlib.patches.Rectangle((x,y),scale_len,100,linewidth=0.5,edgecolor='k',facecolor='k')
+    ax.add_patch(scale_rect)
+    plt.text(x+scale_len/2, y+300, s='2 KM', fontsize=6, horizontalalignment='center')
+
+    # Add release point
+
+    ring.boundary.plot(ax=ax, edgecolor='black')#, color=None, edgecolor='k',linewidth = 2, )#facecolor=None)
+    releasepoint= overlap.create_point(overlap.GROTSUND_COORD)
+    releasepoint.plot(ax=ax,  marker='x', color='black')#, markersize=150, color=None, edgecolor='k',linewidth = 2, facecolor=None)
+
+    basemap = cx.providers.CartoDB.Voyager
+    #basemap = cx.providers.Stamen.Terrain
+    cx.add_basemap(ax, crs="EPSG:25833", source=basemap,
+                attribution=f"Bakgrunnskart: {basemap.attribution}", attribution_size=6)
+
+    # ax.set_title('title')
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    ax.margins(0)
+    ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
+
+    # plt.savefig('sample.png', bbox_inches="tight", pad_inches=0)
+
+    ax.axes.xaxis.set_visible(False)
+    ax.axes.yaxis.set_visible(False)
+    plt.tight_layout()
+    fig.tight_layout()
+    fig.canvas.start_event_loop(sys.float_info.min) #workaround for Exception in Tkinter callback
+
+    fig.savefig(f"{run}.png", bbox_inches='tight')
+    print(f'Saved {run}.png')
+    # %%
 
     # %%
 if __name__ == '__main__':
     base5km = 'grotsund_arp_12h-100m_5km'
     base60km = 'grotsund_arp_12h-max'
 
-    plot_run_boundary()
+    # Lag kart med sirkel for "run boundary"
+    # plot_run_boundary5km()
+    # plot_run_boundary65km()
 
    
     # create_all(base5km)

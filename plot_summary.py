@@ -53,13 +53,8 @@ def read_df(run):
 # %%
 
 
-def plot(run, criteria=''):
-    # %%
+def get_areas_above(run, criteria):
     gdf = read_df(run)
-    # %%
-    run = run.replace(".pkl.bz2", '_')
-    fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
-
     gdf_out = gdf[gdf.Value > 0]  # for speedup
     if criteria:
         gdf_out.Value = (
@@ -70,8 +65,17 @@ def plot(run, criteria=''):
     gdf_out = gdf_out.set_crs('EPSG:4326')
 
     gdf_out.to_crs('EPSG:25833', inplace=True)
+    return gdf_out
 
+
+def plot(run, criteria=''):
+    # %%
+    fig, ax = plt.subplots(dpi=250)  # figsize=(10, 10))
+
+    gdf_out = get_areas_above(run, criteria)
     gdf_out.plot(ax=ax, edgecolor="face", linewidth=1)
+
+    run = run.replace(".pkl.bz2", '_')
 
     minx, miny, maxx, maxy = gdf_out.geometry.total_bounds
     padding_m = (maxx-minx)/100*100*.66
@@ -134,23 +138,23 @@ def create_all(base):
     # %%
     # Full sheltering
     run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
-    plot(run, 'sheltering_full')
+    plot_CM(run, 'sheltering_full')
 
     # Partial sheltering
     run = f'{base}4800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
-    plot(run, 'sheltering_partial')
+    plot_CM(run, 'sheltering_partial')
 
     # Iodine  1 year old
     run = f'{base}hyrod_bitmp_1year_Tota__full.pkl.bz2'
-    plot(run, 'iodine_child')
+    plot_CM(run, 'iodine_child')
 
     # Iodine  Adult
     run = f'{base}hyrod_bitmp_Adults_Tota__full.pkl.bz2'
-    plot(run, 'iodine_adult')
+    plot_CM(run, 'iodine_adult')
 
     # Evac adult
     run = f'{base}16800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
-    plot(run, 'evac')
+    plot_CM(run, 'evac')
 
 
 # %%
@@ -221,23 +225,23 @@ def get_ring(countermeasure, level='maks'):
             "maks": 55.0,
             "95-persentil": 55.0
         },
-        "Innemelding": {
+        "sheltering_full": {
             "maks": 2.5,
             "95-persentil": 0.8
         },
-        "Delvis_innemelding": {
+        "sheltering_partial": {
             "maks": 5.0,
             "95-persentil": 4.0
         },
-        "Evakuering (akutt)": {
+        "evac": {
             "maks": 1.75,
             "95-persentil": 0.5
         },
-        "Jod_barn": {
+        "iodine_child": {
             "maks": 9.0,
             "95-persentil": 4.0
         },
-        "Jod_voksne": {
+        "iodine_adult": {
             "maks": 3.0,
             "95-persentil": 1.5
         }
@@ -253,11 +257,17 @@ def get_ring(countermeasure, level='maks'):
     return ring
 
 
-def plot_CM(countermeasure):
-
+def plot_CM(run='', countermeasure=''):
     # %%
-    run = "tiltak_"+countermeasure
     fig, ax = plt.subplots(dpi=100)  # figsize=(10, 10))
+
+    if run:
+        gdf_out = get_areas_above(run, countermeasure)
+        gdf_out.plot(ax=ax, edgecolor="face", linewidth=1)
+
+        run = countermeasure + '_' + run.replace(".pkl.bz2", '')
+    else:
+        run = "tiltak_"+countermeasure
 
     ring = get_ring(countermeasure, 'maks')
     ring.boundary.plot(ax=ax, edgecolor='black', linestyle=':',)
@@ -274,19 +284,28 @@ def plot_CM(countermeasure):
     ax.set_ylim(miny - padding_m, maxy + padding_m)
 
     # Add scale-bar
-    x, y, scale_len = maxx+padding_m-2500, miny - \
-        padding_m+200, 2000  # arrowstyle='-'
-    scale_rect = matplotlib.patches.Arrow(
-        x, y, scale_len, 0, linewidth=1, edgecolor='k', facecolor='k')
-    ax.add_patch(scale_rect)
-    plt.text(x+scale_len/2, y+100, s='2 KM',
-            horizontalalignment='center') # fontsize=6,
+    if maxx-minx < 15000:
+        scale_m = 2000
+    elif maxx-minx < 40000:
+        scale_m = 5000
+    else:
+        scale_m = 20000
+
+    x = maxx + padding_m - (maxx - minx)*0.015 - scale_m
+    y = miny - padding_m + (maxy - miny)*.015
+
+    # y  =  miny*0.9999999460
+    scale_line = matplotlib.patches.Arrow(
+        x, y, scale_m, 0, linewidth=1, edgecolor='k', facecolor='k')
+    ax.add_patch(scale_line)
+    plt.text(x+scale_m/2, y+(maxy - miny)*.01, s=f'{scale_m/1000:.0f} Km',
+             horizontalalignment='center')  # fontsize=6,
 
     # Add release point
     releasepoint = overlap.create_point(overlap.GROTSUND_COORD)
     releasepoint.plot(ax=ax,  marker='x', color='black')
 
-    basemap = cx.providers.CartoDB.Voyager
+    # basemap = cx.providers.CartoDB.Voyager
     #basemap = cx.providers.Stamen.Terrain
     graatone = {'url': "https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart_graatone&zoom={z}&x={x}&y={y}",
                 'attribution': '© Kartverket'}
@@ -295,8 +314,8 @@ def plot_CM(countermeasure):
 
     basemap = grunnkart
     attrib = f"Bakgrunnskart: {basemap['attribution']}"
-    # cx.add_basemap(ax, crs="EPSG:25833", source="https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart_graatone&zoom={z}&x={x}&y={y}",
-    cx.add_basemap(ax, crs="EPSG:25833", source=basemap, attribution=attrib,) #attribution_size=6)  # , zoom=15)
+    # attribution_size=6)  # , zoom=15)
+    cx.add_basemap(ax, crs="EPSG:25833", source=basemap, attribution=attrib,)
 
     # ax.set_title('title')
     ax.set_xlabel('')
@@ -387,7 +406,8 @@ if __name__ == '__main__':
     # plot_run_boundary5km()
     # plot_run_boundary65km()
 
-    # create_all(base5km)
-    # create_all(base60km)
+    create_all(base5km)
+    create_all(base60km)
 
-    plot_CM('Innemelding')
+    plot_CM(countermeasure='Matproduksjon')
+    # plot_CM('iodine_child')

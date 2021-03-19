@@ -26,7 +26,6 @@ def get_area_max(area, dep_df):
 
 Isocurve = NewType('Isocurve', shapely.geometry.LinearRing)
 
-@lru_cache
 def create_point(startingpoint: tuple):
     p = shapely.geometry.Point(([startingpoint[0], startingpoint[1]]))
     areas = gpd.GeoDataFrame(columns=['name', 'geometry'])
@@ -39,7 +38,6 @@ def create_point(startingpoint: tuple):
 @lru_cache
 def isocurve(distance_km, startingpoint: tuple) -> Isocurve:
     print(f"creating {distance_km} km isocurve")
-
     areas = create_point(startingpoint)
 
     areas.loc[1] = (
@@ -56,7 +54,7 @@ def get_isocurve_max(distance_km, startingpoint: tuple, depo_df):
     ring = geopandas.overlay(isocurve(distance_km, startingpoint), depo_df)
     return ring.Value.max()
 
-
+# %%
 if __name__ == "__main__":
     dep_shp =r"C:\Utvikling\Argos\BatchShpToTable\indata\20200616T190500Z\Shape\AnlopGrotsund_phase3_250m_202006161905_4800_grid_depos_bitmp_I-131.shp"
     dep = geopandas.read_file(dep_shp)

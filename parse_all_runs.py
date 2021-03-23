@@ -1,3 +1,6 @@
+"""
+Parses all shape files and stores the complete grid in a dataframe
+"""
 # %%
 import geopandas
 from pathlib import Path
@@ -11,15 +14,11 @@ import pandas as pd
 from shapely import wkb
 
 import matplotlib.pyplot as plt
+import matplotlib
 # import contextily as cx
 
 import argparse
 import time
-#  %%
-#
-"""
-Parses all shape files and stores the complete grid in a dataframe
-"""
 
 # %%
 class RunMetadata(NamedTuple):
@@ -93,6 +92,9 @@ def main():
         '-d', '--debug', action='store_true', default=False,
         help='Debug')
     parser.add_argument(
+        '-pl', '--plot', action='store_true', default=False,
+        help='Plot every shp to png')
+    parser.add_argument(
         'summary_pattern', type=str,
         help='Creates an image with all shp files matching "s" summed. Remember to include <timestamp>_toteffout...')
 
@@ -154,6 +156,36 @@ def get_runs(args, path):
     return runs
 
 
+def plot_iso(gdf, timestamp:str):
+    # %%
+    gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T070000Z\Shape\grotsund_arp_12h-100m_5km_202006170700_4800_grid_toteffout_bitmp_Adults_Total.SHP")
+    timestamp = '1'
+    # %%
+    from argos_colormaps import toteff
+    cmap =matplotlib.colors.ListedColormap(toteff.values())
+
+    bins = list(toteff.keys())
+    # %%
+    # gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200328T070000Z\Shape\grotsund_arp_12h-100m_5km_202007300100_4800_grid_toteffout_bitmp_Adults_Total.shp")
+    fig, ax = plt.subplots(dpi=100)  # figsize=(10, 10))
+    gdf = gdf[gdf.Value > 20E-3]
+    if len(gdf.index) > 3:
+        gdf.plot(ax=ax, column='Value',
+            cmap=cmap,
+            scheme='user_defined',
+            edgecolor='black',
+            alpha=0.9,
+            classification_kwds={'bins':bins},
+            
+            )
+
+        fig.canvas.start_event_loop(sys.float_info.min)
+        outfile = f"output/{timestamp}.png"
+        fig.savefig(outfile, bbox_inches='tight')
+        print(f'Saved {outfile}')
+    # %%
+
+
 def parse_run(timestamp, run, filelist, args):
     print(f"Reading {run}, {timestamp}")
 
@@ -166,6 +198,8 @@ def parse_run(timestamp, run, filelist, args):
         _, _, key = parse_filename(file)
         print(f"\t{key.outputname} T:{key.timestep},E: {key.nuc_or_age} {file.name}")
         gdf = geopandas.read_file(file)
+        if args.plot:
+            plot_iso(gdf, timestamp)
         print(f"Rows {len(gdf.index)}")
         gdf['geom_str'] = gdf.geometry.apply(lambda x: wkb.dumps(x))
         # gdf.drop(columns='geometry', inplace=True)
@@ -182,6 +216,8 @@ if __name__ == "__main__":
     # %%
     # sys.argv = ["1", '876000_grid_gamratetot_bitmp_Total',
     #             '-i', 'indata/arp']
+    # sys.argv = "1 4800_grid_toteffout_bitmp_Adults_Total -i E:\ArgosBatch\grotsund_arp_12h-100m_5km -pl".split()
+    sys.argv = r"1 4800_grid_toteffout_bitmp_Adults_Total -i E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T070000Z -pl".split() # single
     # %%
     df = main()
     # %%

@@ -26,7 +26,7 @@ from tkinter import filedialog
 from pathlib import Path
 import argparse
 import time
-
+import matplotlib.pyplot as plt
 
 import geopandas
 import pandas as pd

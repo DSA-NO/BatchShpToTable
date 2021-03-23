@@ -1,3 +1,9 @@
+"""
+Script that reads a pickle file and plots with a background map using contextily.
+
+Using 'max' as aggregator show cells where the limit is ever exceeded IF .pkl is 0/1 based on criteria. 
+Use 'max' or 'mean' on full input. 
+"""
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %%
@@ -11,12 +17,6 @@ import matplotlib
 import overlap
 import sys
 
-"""
-Script that reads a pickle file and plots with a background map using contextily.
-
-Using 'max' as aggregator show cells where the limit is ever exceeded IF .pkl is 0/1 based on criteria. 
-Use 'max' or 'mean' on full input. 
-"""
 # Nordic flagbook criteria
 DOSE_CRITERIA = {
     'iodine_child': 10,  # mGy end pf run

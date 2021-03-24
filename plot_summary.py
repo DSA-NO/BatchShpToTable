@@ -337,6 +337,125 @@ def plot_CM(run='', countermeasure=''):
     # %%
 
 
+def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=False):
+    # %%
+    # gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T070000Z\Shape\grotsund_arp_12h-100m_5km_202006170700_4800_grid_toteffout_bitmp_Adults_Total.SHP")
+    # timestamp = '1'
+    # %%
+    import argos_colormaps
+
+    isovalues: dict = getattr(argos_colormaps,isovalue_name)
+    cmap =matplotlib.colors.ListedColormap(isovalues.values())
+
+    bins = list(isovalues.keys())
+    # %%  
+    # gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T160000Z\Shape\grotsund_arp_12h-100m_5km_202006171600_4800_grid_toteffout_bitmp_Adults_Total.shp")
+    fig, ax = plt.subplots(dpi=100)  # figsize=(10, 10))
+
+    # Transform Sv to mSv:
+    gdf.Value = gdf.Value*1000
+    gdf = gdf[gdf.Value > min(bins)]
+    if len(gdf.index) > 3:
+        gdf= gdf.to_crs('EPSG:25833')
+
+        gdf.plot(ax=ax, column='Value',
+            cmap=cmap,
+            scheme='UserDefined',
+
+            edgecolor='none',
+            # alpha=0.9,
+            classification_kwds={'bins':bins},
+            legend=True,
+            legend_kwds={'loc':'lower left','bbox_to_anchor':(1.0, 0)}
+            # legend_kwds={'label': 'Dose [mSv]'}
+            )
+
+        # ring = get_ring(countermeasure, 'maks')
+        # ring.boundary.plot(ax=ax, edgecolor='black', linestyle=':',)
+        FIXED_AREA = False
+        if FIXED_AREA:
+            minx = 658754   #grøtsund lokalt
+            miny = 7742093   
+            maxx= 661589  
+            maxy= 7744187 
+            padding_m = 0
+        else:
+            minx, miny, maxx, maxy = gdf.geometry.total_bounds
+            padding_m = (maxx-minx)/100*100*1
+        ax.set_xlim(minx - padding_m, maxx + padding_m)
+        ax.set_ylim(miny - padding_m, maxy + padding_m)
+
+
+        # Add scale-bar
+        if maxx-minx < 2000:
+            scale_m = 100
+            scale_str = "100 m"
+        if maxx-minx < 6000:
+            scale_m = 500
+            scale_str = "500 m"
+        elif maxx-minx < 15000:
+            scale_m = 2000
+            scale_str = "2 Km"
+        elif maxx-minx < 40000:
+            scale_m = 5000
+            scale_str = "5 Km"
+        else:
+            scale_m = 20000
+            scale_str = "20 Km"
+
+        x = maxx + padding_m - (maxx - minx)*0.015 - scale_m
+        y = miny - padding_m + (maxy - miny)*.015
+
+        # y  =  miny*0.9999999460
+        scale_line = matplotlib.patches.Arrow(
+            x, y, scale_m, 0, linewidth=1, edgecolor='k', facecolor='k')
+        ax.add_patch(scale_line)
+        plt.text(x+scale_m/2, y+(maxy - miny)*.01, s=scale_str,
+                horizontalalignment='center')  # fontsize=6,
+
+        # # Add release point
+        # releasepoint = overlap.create_point(overlap.GROTSUND_COORD)
+        # releasepoint.plot(ax=ax,  marker='x', color='black')
+
+        # basemap = cx.providers.CartoDB.Voyager
+        #basemap = cx.providers.Stamen.Terrain
+        graatone = {'url': "https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart_graatone&zoom={z}&x={x}&y={y}",
+                    'attribution': '© Kartverket'}
+        grunnkart = {'url': "https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart&zoom={z}&x={x}&y={y}",
+                    'attribution': '© Kartverket'}
+
+        basemap = grunnkart
+        attrib = f"Bakgrunnskart: {basemap['attribution']}"
+        # attribution_size=6)  # , zoom=15)
+        cx.add_basemap(ax, crs="EPSG:25833", source=basemap, attribution=attrib,)
+
+        # ax.set_title('title')
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        ax.margins(0)
+        ax.tick_params(left=False, labelleft=False,
+                    bottom=False, labelbottom=False)
+
+        ax.axes.xaxis.set_visible(False)
+        ax.axes.yaxis.set_visible(False)
+        # plt.tight_layout()
+        # fig.tight_layout()
+
+        # workaround for Exception in Tkinter callback:
+        fig.canvas.start_event_loop(sys.float_info.min)
+        outfile = f"output/{timestamp}_{isovalue_name}.png"
+    # %%
+        fig.savefig(outfile, bbox_inches='tight')
+        plt.close()
+        print(f'Saved {outfile}')
+
+        return True
+    else:
+        return False
+    # %%
+
+
+
 def plot_run_boundary5km():
     # %%
     from shapely.geometry import Polygon, mapping

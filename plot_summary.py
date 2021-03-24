@@ -337,54 +337,55 @@ def plot_CM(run='', countermeasure=''):
     # %%
 
 
-def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=False):
+def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=False, name_extra=''):
     # %%
     # gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T070000Z\Shape\grotsund_arp_12h-100m_5km_202006170700_4800_grid_toteffout_bitmp_Adults_Total.SHP")
     # timestamp = '1'
     # %%
     import argos_colormaps
 
-    isovalues: dict = getattr(argos_colormaps,isovalue_name)
-    cmap =matplotlib.colors.ListedColormap(isovalues.values())
+    isovalues: dict = getattr(argos_colormaps, isovalue_name)
+    isovalue_modifier = getattr(argos_colormaps, isovalue_name+"_modifier")
+    cmap = matplotlib.colors.ListedColormap(isovalues.values())
 
-    bins = list(isovalues.keys())
-    # %%  
+    bins = list(isovalues.keys())+[float("inf")]
+    # %%
     # gdf = geopandas.read_file(r"E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T160000Z\Shape\grotsund_arp_12h-100m_5km_202006171600_4800_grid_toteffout_bitmp_Adults_Total.shp")
     fig, ax = plt.subplots(dpi=100)  # figsize=(10, 10))
 
     # Transform Sv to mSv:
-    gdf.Value = gdf.Value*1000
+    gdf.Value = gdf.Value*isovalue_modifier
     gdf = gdf[gdf.Value > min(bins)]
     if len(gdf.index) > 3:
-        gdf= gdf.to_crs('EPSG:25833')
+        gdf = gdf.to_crs('EPSG:25833')
+        # last one if 'inf' to make bins "larger than.."
+        labels = [f">{x}" for x in bins[:-1]]
+        gdf['cat'] = pd.cut(gdf['Value'], bins=bins,
+                            labels=labels, right=False)
 
-        gdf.plot(ax=ax, column='Value',
-            cmap=cmap,
-            scheme='UserDefined',
-
-            edgecolor='none',
-            # alpha=0.9,
-            classification_kwds={'bins':bins},
-            legend=True,
-            legend_kwds={'loc':'lower left','bbox_to_anchor':(1.0, 0)}
-            # legend_kwds={'label': 'Dose [mSv]'}
-            )
+        gdf.plot(ax=ax, column='cat',
+                 edgecolor='none',
+                 # alpha=0.9,
+                 cmap="magma_r",
+                 legend=True,
+                 legend_kwds={'loc': 'lower left', 'bbox_to_anchor': (1.0, 0)}
+                 # legend_kwds={'label': 'Dose [mSv]'}
+                 )
 
         # ring = get_ring(countermeasure, 'maks')
         # ring.boundary.plot(ax=ax, edgecolor='black', linestyle=':',)
         FIXED_AREA = False
         if FIXED_AREA:
-            minx = 658754   #grøtsund lokalt
-            miny = 7742093   
-            maxx= 661589  
-            maxy= 7744187 
+            minx = 658754  # grøtsund lokalt
+            miny = 7742093
+            maxx = 661589
+            maxy = 7744187
             padding_m = 0
         else:
             minx, miny, maxx, maxy = gdf.geometry.total_bounds
             padding_m = (maxx-minx)/100*100*1
         ax.set_xlim(minx - padding_m, maxx + padding_m)
         ax.set_ylim(miny - padding_m, maxy + padding_m)
-
 
         # Add scale-bar
         if maxx-minx < 2000:
@@ -411,7 +412,7 @@ def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=Fals
             x, y, scale_m, 0, linewidth=1, edgecolor='k', facecolor='k')
         ax.add_patch(scale_line)
         plt.text(x+scale_m/2, y+(maxy - miny)*.01, s=scale_str,
-                horizontalalignment='center')  # fontsize=6,
+                 horizontalalignment='center')  # fontsize=6,
 
         # # Add release point
         # releasepoint = overlap.create_point(overlap.GROTSUND_COORD)
@@ -422,19 +423,20 @@ def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=Fals
         graatone = {'url': "https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart_graatone&zoom={z}&x={x}&y={y}",
                     'attribution': '© Kartverket'}
         grunnkart = {'url': "https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart&zoom={z}&x={x}&y={y}",
-                    'attribution': '© Kartverket'}
+                     'attribution': '© Kartverket'}
 
         basemap = grunnkart
         attrib = f"Bakgrunnskart: {basemap['attribution']}"
         # attribution_size=6)  # , zoom=15)
-        cx.add_basemap(ax, crs="EPSG:25833", source=basemap, attribution=attrib,)
+        cx.add_basemap(ax, crs="EPSG:25833",
+                       source=basemap, attribution=attrib,)
 
         # ax.set_title('title')
         ax.set_xlabel('')
         ax.set_ylabel('')
         ax.margins(0)
         ax.tick_params(left=False, labelleft=False,
-                    bottom=False, labelbottom=False)
+                       bottom=False, labelbottom=False)
 
         ax.axes.xaxis.set_visible(False)
         ax.axes.yaxis.set_visible(False)
@@ -443,7 +445,7 @@ def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=Fals
 
         # workaround for Exception in Tkinter callback:
         fig.canvas.start_event_loop(sys.float_info.min)
-        outfile = f"output/{timestamp}_{isovalue_name}.png"
+        outfile = f"output/{timestamp}{name_extra}_{isovalue_name}.png"
     # %%
         fig.savefig(outfile, bbox_inches='tight')
         plt.close()
@@ -453,7 +455,6 @@ def plot_valueisocurves(gdf, isovalue_name:str='toteff', timestamp='', ring=Fals
     else:
         return False
     # %%
-
 
 
 def plot_run_boundary5km():

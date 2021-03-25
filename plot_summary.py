@@ -404,14 +404,14 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
             scale_m = 20000
             scale_str = "20 Km"
 
-        x = maxx + padding_m - (maxx - minx)*0.015 - scale_m
-        y = miny - padding_m + (maxy - miny)*.015
+        x = maxx + padding_m - (maxx - minx)*0.025 - scale_m
+        y = miny - padding_m + (maxy - miny)*.03
 
         # y  =  miny*0.9999999460
         scale_line = matplotlib.patches.Arrow(
             x, y, scale_m, 0, linewidth=1, edgecolor='k', facecolor='k')
         ax.add_patch(scale_line)
-        plt.text(x+scale_m/2, y+(maxy - miny)*.01, s=scale_str,
+        plt.text(x+scale_m/2, y+(maxy - miny)*.05, s=scale_str,
                  horizontalalignment='center')  # fontsize=6,
 
         # # Add release point

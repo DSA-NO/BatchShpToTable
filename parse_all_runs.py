@@ -216,9 +216,10 @@ if __name__ == "__main__":
     #             '-i', 'indata/arp']
     # TYR:
     # sys.argv = "dummy grid_thyrod_bitmp_1year_Total -i E:\ArgosBatch\grotsund_arp_12h-100m_5km -pl".split()
-    # I-131
-    sys.argv = "dummy grid_depos_bitmp_I-131 -i E:\ArgosBatch\grotsund_arp_12h-max\ -pl".split()
-    
+    # I-131 Grov
+    sys.argv = "dummy grid_depos_bitmp_I-131 -i E:\ArgosBatch\grotsund_arp_12h-max\ -pl".split()    
+    # I-131 Fin
+    # sys.argv = "dummy grid_depos_bitmp_I-131 -i E:\ArgosBatch\grotsund_arp_12h-100m_5km -pl".split()
     
     # sys.argv = r"1 4800_grid_toteffout_bitmp_Adults_Total -i E:\ArgosBatch\grotsund_arp_12h-100m_5km\20200617T070000Z -pl".split() # single
     # %%

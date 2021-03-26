@@ -530,6 +530,9 @@ def plot_run_boundary5km():
 
     # %%
 if __name__ == '__main__':
+    # Merk at plotting krascher med "ValueError: GEOSGeom_createLinearRing_r returned a NULL pointer" i 
+    # revisions etter e09452eff26190370e956660312 
+    
     base5km = 'grotsund_arp_12h-100m_5km'
     base60km = 'grotsund_arp_12h-max'
 
@@ -545,4 +548,7 @@ if __name__ == '__main__':
     # plot_CM('iodine_child')
 
     run = f'E:/{base5km}16800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
-    plot_CM(run, 'evac')
+    # plot_CM(run, 'evac')
+
+    
+    plot("grotsund_arp_12h-maxgrid_depos_bitmp_I-131__full.pkl.bz2", 'reinsdyr')

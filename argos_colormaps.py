@@ -45,5 +45,10 @@ thyr_modifier = 1000
 depo = {k:k for k in [1, 10, 100, 1000, 10000 ]} #used color from magma_r
 depo_modifier = 1/1000
 
+# Tiltak reinsdyr
+rein = {k:k for k in [2000, 2000, 2000, 2000, 2000]} #used color from magma_r
+rein_modifier = 1
+
+
 if __name__ == '__main__':
     print(toteff)

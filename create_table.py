@@ -241,8 +241,9 @@ if __name__ == "__main__":
     # Slice by nested:
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
     # sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -c".split()
-    # Område med 2000kBq/m2 - Reinsdyr:
-    sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -s grid_depos_bitmp_I-131 --distances long -c".split()
+
+    # Område med 2000kBq/m2 - Reinsdyr: #FUNGERER KUN PÅ LINUX! geopandas krascher uten feilmelding
+    # sys.argv = "dummy -i /mnt/hgfs/Utvikling/Argos/BatchShpToTable/i131 -s grid_depos_bitmp_I-131 --distances long -c".split()
 
     # breaking:
     # sys.argv = "dummy -i E:/ArgosBatch/grotsund_arp_12h-max/20200401T010000Z/Shape -s grid_depos_bitmp_I-131 --distances long -c".split()

@@ -4,18 +4,20 @@ Script that reads a pickle file and plots with a background map using contextily
 Using 'max' as aggregator show cells where the limit is ever exceeded IF .pkl is 0/1 based on criteria. 
 Use 'max' or 'mean' on full input. 
 """
+import sys
+
+import contextily as cx
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %%
 import geopandas as gpd
+import mapclassify
+import matplotlib
+import matplotlib.pyplot as plt
 import pandas as pd
 from shapely import wkb
-import mapclassify
-import contextily as cx
-import matplotlib.pyplot as plt
-import matplotlib
+
 import overlap
-import sys
 
 # Nordic flagbook criteria
 DOSE_CRITERIA = {
@@ -24,6 +26,8 @@ DOSE_CRITERIA = {
     'evac': 20,  # 7 dager
     'sheltering_partial': 1,  # mSv 2 dager
     'sheltering_full': 10,   # mSv 2 dager
+    #Other:
+    'reinsdyr': 2000*1000, # kBq/m2 depo. Workaround for SI: *1000 
 }
 DOSE_CRITERIA_SI = {k: v/1000 for k, v in DOSE_CRITERIA.items()}
 
@@ -343,6 +347,7 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
     # timestamp = '1'
     # %%
     import argos_colormaps
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
     isovalues: dict = getattr(argos_colormaps, isovalue_name)
     isovalue_modifier = getattr(argos_colormaps, isovalue_name+"_modifier")
@@ -365,7 +370,7 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
 
         gdf.plot(ax=ax, column='cat',
                  edgecolor='none',
-                 # alpha=0.9,
+                #  alpha=0.6,
                  cmap="magma_r",
                  legend=True,
                  legend_kwds={'loc': 'lower left', 'bbox_to_anchor': (1.0, 0)}
@@ -376,16 +381,17 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
         # ring.boundary.plot(ax=ax, edgecolor='black', linestyle=':',)
         FIXED_AREA = False
         if FIXED_AREA:
-            minx = 658754  # grøtsund lokalt
-            miny = 7742093
-            maxx = 661589
-            maxy = 7744187
+            # grøtsund lokalt
+            minx, maxx = (657681.8961085009, 661980.4053686694)
+            miny, maxy = (7740622.53799353, 7744671.51309664)
             padding_m = 0
         else:
             minx, miny, maxx, maxy = gdf.geometry.total_bounds
             padding_m = (maxx-minx)/100*100*1
         ax.set_xlim(minx - padding_m, maxx + padding_m)
         ax.set_ylim(miny - padding_m, maxy + padding_m)
+        # print('x',ax.get_xlim( ))
+        # print('y',ax.get_ylim( ))
 
         # Add scale-bar
         if maxx-minx < 2000:
@@ -397,9 +403,13 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
         elif maxx-minx < 15000:
             scale_m = 2000
             scale_str = "2 Km"
-        elif maxx-minx < 40000:
+        elif maxx-minx < 20000:
             scale_m = 5000
             scale_str = "5 Km"
+
+        elif maxx-minx < 40000:
+            scale_m = 10000
+            scale_str = "10 Km"
         else:
             scale_m = 20000
             scale_str = "20 Km"
@@ -407,12 +417,14 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
         x = maxx + padding_m - (maxx - minx)*0.025 - scale_m
         y = miny - padding_m + (maxy - miny)*.03
 
-        # y  =  miny*0.9999999460
-        scale_line = matplotlib.patches.Arrow(
-            x, y, scale_m, 0, linewidth=1, edgecolor='k', facecolor='k')
-        ax.add_patch(scale_line)
-        plt.text(x+scale_m/2, y+(maxy - miny)*.05, s=scale_str,
-                 horizontalalignment='center')  # fontsize=6,
+        scalebar = AnchoredSizeBar(ax.transData,
+                              size=scale_m,
+                              label=scale_str,
+                              loc='lower right',
+                              pad=0.1, borderpad=0.5, sep=5,
+                              label_top=True,
+                              frameon=False)
+        ax.add_artist(scalebar)
 
         # # Add release point
         # releasepoint = overlap.create_point(overlap.GROTSUND_COORD)
@@ -516,7 +528,6 @@ def plot_run_boundary5km():
     print(f'Saved {run}.png')
     # %%
 
-
     # %%
 if __name__ == '__main__':
     base5km = 'grotsund_arp_12h-100m_5km'
@@ -526,8 +537,12 @@ if __name__ == '__main__':
     # plot_run_boundary5km()
     # plot_run_boundary65km()
 
-    create_all(base5km)
-    create_all(base60km)
+    # create_all(base5km)
+    # create_all(base60km)
 
-    plot_CM(countermeasure='Matproduksjon')
+    # plot_CM(countermeasure='Matproduksjon')
+    # plot_CM(countermeasure='Matproduksjon')
     # plot_CM('iodine_child')
+
+    run = f'E:/{base5km}16800_grid_toteffout_bitmp_Adults_Total__full.pkl.bz2'
+    plot_CM(run, 'evac')

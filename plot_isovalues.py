@@ -5,9 +5,8 @@ import plot_summary
 import geopandas
 # %%
 
-
-def toteff():
-    filelist = open('toteff_files.txt').readlines()
+def toteff(listfile = 'toteff_files.txt'):
+    filelist = open(listfile).readlines()
     filelist = [Path(file.strip()) for file in filelist]
 
     class Args:
@@ -79,6 +78,8 @@ def reinsdyr(listfile = 'depo_files_i-131.txt'):
 # reinsdyr()
 # i131()
 # toteff()
+# toteff('toteff_final.txt')
+reinsdyr('eks4.txt')
+i131('eks4.txt')
 
-
-i131('i131_test.txt')
+# i131('i131_fine.txt')

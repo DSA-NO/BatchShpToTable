@@ -1,0 +1,5 @@
+#ok
+E:/ArgosBatch/grotsund_arp_12h-max/20200331T160000Z/Shape/grotsund_arp_12h-max_202003311600_1528_grid_depos_bitmp_I-131.shp
+
+#fail:
+E:/ArgosBatch/grotsund_arp_12h-max/20200401T010000Z/Shape/grotsund_arp_12h-max_202004010100_2718_grid_depos_bitmp_I-131.shp

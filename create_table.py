@@ -51,7 +51,7 @@ COLUMN_NAMES = {'depos_bitmp': "Deposition [Bq/m2]",
                 }
 DISTANCES = {
     'short': [0.1, .2,.3, .4,.5, .6, .8, 1., 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.5, 4, 4.5],
-    'long' : [4, 6, 8, 10., 12, 15, 20, 30, 40, 50,60 70, 80, 90]}
+    'long' : [4, 6, 8, 10., 12, 15, 20, 30, 40, 50,60, 70, 80, 90]}
 
 
 
@@ -152,8 +152,8 @@ def main():
 
     if args.pickle_file:
         df = pd.from_pickle(args.load_pickle)
-    elif args.summary_map_pattern:
-        pass
+    # elif args.summary_map_pattern:
+    #     pass
     else:
         runs = get_runs(args, path)
 
@@ -192,6 +192,7 @@ def parse_all_runs(args, runs):
         print(f"Run {r}/{len(runs)}")
         for timestamp, filelist in timestamps.items():
             rows.append(parse_run(timestamp, run, filelist, args))
+            print(len(rows))
     return rows
 
 def get_runs(args, path):
@@ -220,6 +221,9 @@ def parse_run(timestamp, run, filelist, args):
     for file in filelist:
         _, _, key = parse_filename(file)
         print(f"\t{key.outputname} T:{key.timestep},E: {key.nuc_or_age}")
+        if file == Path("E:/ArgosBatch/grotsund_arp_12h-max/20200401T010000Z/Shape/grotsund_arp_12h-max_202004010100_2718_grid_depos_bitmp_I-131.shp"):
+            print("skipped")
+            return timestamp_results
         gdf = geopandas.read_file(file)
         if args.shp_max_mode:
             timestamp_results[key] = get_gdf_max(gdf)['max']
@@ -237,6 +241,11 @@ if __name__ == "__main__":
     # Slice by nested:
     # df.loc[:,(slice(None),slice(None), 'Cs-137  0.2km')]
     # sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -c".split()
+    # Område med 2000kBq/m2 - Reinsdyr:
+    sys.argv = "dummy -i E:\ArgosBatch\grotsund_arp_12h-max -s grid_depos_bitmp_I-131 --distances long -c".split()
+
+    # breaking:
+    # sys.argv = "dummy -i E:/ArgosBatch/grotsund_arp_12h-max/20200401T010000Z/Shape -s grid_depos_bitmp_I-131 --distances long -c".split()
     #for notebook:
     # 
     df = main()

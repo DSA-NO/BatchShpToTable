@@ -10,7 +10,7 @@ from functools import lru_cache
 
 KJELLER_COORD = (11.051946, 59.974542) # opposite of  lon/lat than google maps..
 GROTSUND_COORD = (19.139001, 69.747223) # opposite of  lon/lat than google maps..
-tromso_area = geopandas.read_file('kart/tromso2.shp')
+tromso_area = geopandas.read_file('kart/tromso2.shp') #broken?!
 
 # %%
 

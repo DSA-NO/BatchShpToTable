@@ -1,3 +1,4 @@
+"""Plot runs one by one based on a list of files in tge given `listfile`. Colors the plot based on value/critera in argos_colormaps.py """
 # %%
 import parse_all_runs
 from pathlib import Path

@@ -65,8 +65,7 @@ def reinsdyr(listfile = 'depo_files_i-131.txt'):
         debug = False
 
     for file in filelist:
-        runname, timestamp, key = parse_all_runs.parse_filename(file)
-        run = ''
+        _, timestamp, _ = parse_all_runs.parse_filename(file)
         gdf = geopandas.read_file(file)
         isovalue_name = 'rein'
         plot_summary.plot_valueisocurves(
@@ -79,7 +78,7 @@ def reinsdyr(listfile = 'depo_files_i-131.txt'):
 # i131()
 # toteff()
 # toteff('toteff_final.txt')
-reinsdyr('eks4.txt')
-i131('eks4.txt')
+reinsdyr('reinsdyr_rapport.txt')
+i131('I131_grov-rapport.txt')
 
 # i131('i131_fine.txt')

@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 from shapely import wkb
-
+from pathlib import Path
 import overlap
 
 # Nordic flagbook criteria
@@ -459,6 +459,7 @@ def plot_valueisocurves(gdf, isovalue_name: str = 'toteff', timestamp='', ring=F
         fig.canvas.start_event_loop(sys.float_info.min)
         outfile = f"output/{timestamp}{name_extra}_{isovalue_name}.png"
     # %%
+        Path(outfile).unlink(missing_ok=True)
         fig.savefig(outfile, bbox_inches='tight')
         plt.close()
         print(f'Saved {outfile}')

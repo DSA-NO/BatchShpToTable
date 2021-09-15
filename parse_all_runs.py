@@ -215,8 +215,10 @@ if __name__ == "__main__":
     # sys.argv = ["1", '876000_grid_gamratetot_bitmp_Total',
     #             '-i', 'indata/arp']
 
-    # I-131 Grov to pickle:
-    sys.argv = r"dummy grid_depos_bitmp_I-131 -i E:\ArgosBatch\grotsund_arp_12h-max\ ".split()  
+
+    # Example inputs:
+    # I-131 coarse to pickle:
+    #sys.argv = r"dummy grid_depos_bitmp_I-131 -i E:\ArgosBatch\grotsund_arp_12h-max\ ".split()  
 
     # TYR:
     # sys.argv = "dummy grid_thyrod_bitmp_1year_Total -i E:\ArgosBatch\grotsund_arp_12h-100m_5km -pl".split()
